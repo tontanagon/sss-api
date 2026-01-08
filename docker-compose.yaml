@@ -112,7 +112,7 @@ services:
 
   sss-redis:
     container_name: sss-redis
-    image: bitnami/redis:7.0.15
+    image: bitnamilegacy/redis:7.0.15
     restart: always
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD:?error}
