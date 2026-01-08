@@ -1,0 +1,107 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sss-api
+  namespace: sss
+  # annotations:
+  #   keel.sh/policy: force
+  #   keel.sh/match-tag: 'true'
+  #   keel.sh/trigger: poll
+spec:
+  progressDeadlineSeconds: 600
+  # terminationGracePeriodSeconds: 30
+  replicas: 1
+  revisionHistoryLimit: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+  selector:
+    matchLabels:
+      app: sss-api
+  template:
+    metadata:
+      name: sss-api
+      labels:
+        app: sss-api
+    spec:
+      terminationGracePeriodSeconds: 30
+      imagePullSecrets:
+        - name: regcred
+      initContainers:
+        - name: create-storage-folder
+          image: bash
+          command: ["/usr/local/bin/bash", "-c"]
+          args: ["mkdir -pv /app/storage/{app,framework,logs} && mkdir -p /app/storage/framework/{cache,sessions,testings,views} && chown -R 33:33 /app/storage"]
+          volumeMounts:
+          - name: main-volume
+            mountPath: /app/storage
+            subPath: api
+      containers:
+        - name: application
+          image: registry.mininggarden.com/smart-store-system/api:dev
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: api-config
+            - secretRef:
+                name: api-secret
+          env:
+          - name: NODE_ENV
+            value: production
+          ports:
+          - containerPort: 8000
+            name: p8000
+            protocol: TCP
+          resources: {}
+          startupProbe:
+            httpGet:
+              path: /
+              port: 8000
+            failureThreshold: 1
+            periodSeconds: 15
+            initialDelaySeconds: 5
+            timeoutSeconds: 30
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8000
+            failureThreshold: 1
+            periodSeconds: 15
+            timeoutSeconds: 30
+            initialDelaySeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8000
+            failureThreshold: 1
+            periodSeconds: 15
+            timeoutSeconds: 30
+            initialDelaySeconds: 15
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sleep", "10"]
+          volumeMounts:
+          - name: main-volume
+            mountPath: /app/storage
+            subPath: api
+      volumes:
+      - name: main-volume
+        persistentVolumeClaim:
+          claimName: sss-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sss-api
+  namespace: sss
+spec:
+  type: ClusterIP
+  selector:
+    app: sss-api
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000

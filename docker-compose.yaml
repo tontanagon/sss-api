@@ -1,0 +1,135 @@
+version: '3.7'
+services:
+  sss-api:
+    container_name: sss-api
+    build:
+      context: .
+      dockerfile: Dockerfile
+    # command: "tail -F anything"
+    command: "php -d variables_order=EGPCS artisan octane:start --host=0.0.0.0 --port=8000 --watch"
+    restart: always
+    volumes:
+      - "./public:/app"
+    ports:
+      - ${PUBLIC_PORT}:8000
+    environment:
+      - APP_NAME="Smart Store System"
+      - APP_ENV=local
+      - APP_KEY=base64:QlXNhn3QHHnqLwfqj+TLhclU9ZyVeyv+v9oVzAjOJ8E=
+      - APP_DEBUG=true
+      - APP_URL=http://localhost
+
+      - APP_LOCALE=en
+      - APP_FALLBACK_LOCALE=en
+      - APP_FAKER_LOCALE=en_US
+
+      - APP_MAINTENANCE_DRIVER=file
+
+      - PHP_CLI_SERVER_WORKERS=4
+
+      - BCRYPT_ROUNDS=12
+
+      - LOG_CHANNEL=stack
+      - LOG_STACK=single
+      - LOG_DEPRECATIONS_CHANNEL=null
+      - LOG_LEVEL=debug
+
+      - DB_CONNECTION=mysql
+      - DB_HOST=sss-database-mysql
+      - DB_PORT=3306
+      - DB_DATABASE=${MYSQL_DATABASE:?error}
+      - DB_USERNAME=${MYSQL_USER:?error}
+      - DB_PASSWORD=${MYSQL_PASSWORD:?error}
+
+      - SESSION_DRIVER=redis
+      - SESSION_LIFETIME=43200
+      - SESSION_ENCRYPT=false
+      - SESSION_PATH=/
+      - SESSION_DOMAIN=null
+
+      - BROADCAST_CONNECTION=log
+      - FILESYSTEM_DISK=local
+      - QUEUE_CONNECTION=redis
+
+      - CACHE_STORE=redis
+      - CACHE_PREFIX=
+
+      - MEMCACHED_HOST=127.0.0.1
+
+      - REDIS_CLIENT=predis
+      - REDIS_HOST=sss-redis
+      - REDIS_PASSWORD=${REDIS_PASSWORD:?error}
+      - REDIS_PORT=6379
+
+      - MAIL_MAILER=smtp
+      - MAIL_SCHEME=null
+      - MAIL_HOST=sss-mailhog
+      - MAIL_PORT=1025
+      - MAIL_USERNAME=null
+      - MAIL_PASSWORD=null
+      - MAIL_FROM_ADDRESS="hello@example.com"
+      - MAIL_FROM_NAME="Smart Store System"
+
+      - AWS_ACCESS_KEY_ID=
+      - AWS_SECRET_ACCESS_KEY=
+      - AWS_DEFAULT_REGION=us-east-1
+      - AWS_BUCKET=
+      - AWS_USE_PATH_STYLE_ENDPOINT=false
+
+      - VITE_APP_NAME="Smart Store System"
+      
+      - OCTANE_SERVER=swoole
+      - OCTANE_HTTPS=false
+
+      - THROTTLE_API=${THROTTLE_API}
+    networks:
+      - sss
+
+  sss-database-mysql:
+    image: mysql:8.0.23
+    container_name: sss-database-mysql
+    command: mysqld --default-authentication-plugin=mysql_native_password
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512m
+        reservations:
+          cpus: '0.5'
+          memory: 256m
+    environment:
+      MYSQL_USER: ${MYSQL_USER:?error}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD:?error}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:?error}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?error}
+    volumes:
+      - ./mysql:/var/lib/mysql
+    networks:
+      - sss
+    ports:
+      - '${MYSQL_PUBLIC_PORT:?error}:3306'
+
+  sss-redis:
+    container_name: sss-redis
+    image: bitnami/redis:7.0.15
+    restart: always
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?error}
+      TZ: Asia/Bangkok
+    networks:
+      - sss
+
+  sss-mailhog:
+    container_name: sss-mailhog
+    image: mailhog/mailhog:latest
+    restart: always
+    networks: 
+      - sss
+    ports:
+      - "1025:1025" # SMTP server port
+      - "8025:8025" # Web UI port
+      
+networks:
+  sss:
+    name: sss

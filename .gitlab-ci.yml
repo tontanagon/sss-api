@@ -1,0 +1,147 @@
+
+#Following instructions (as of 2020-04-01): https://docs.gitlab.com/ee/ci/docker/using_kaniko.html
+#Kaniko docs are here: https://github.com/GoogleContainerTools/kaniko
+#While this example shows building to multiple registries for all branches, with a few modifications
+#  it can be used to build non-master branches to a "dev" container registry and only build master to 
+#  a production container registry
+
+# https://gitlab.com/guided-explorations/containers/kaniko-docker-build/-/tree/master
+
+image: 
+  name: gcr.io/kaniko-project/executor:debug
+  entrypoint: [""]
+
+variables: 
+  #More Information on Kaniko Caching: https://cloud.google.com/build/docs/kaniko-cache
+  KANIKO_CACHE_ARGS: "--cache=true --cache-copy-layers=true --cache-ttl=24h"
+  VERSIONLABELMETHOD: "OnlyIfThisCommitHasVersion" # options: "OnlyIfThisCommitHasVersion","LastVersionTagInGit"
+  IMAGE_LABELS: >
+    --label org.opencontainers.image.vendor=$CI_SERVER_URL/$GITLAB_USER_LOGIN
+    --label org.opencontainers.image.authors=$CI_SERVER_URL/$GITLAB_USER_LOGIN
+    --label org.opencontainers.image.revision=$CI_COMMIT_SHA
+    --label org.opencontainers.image.source=$CI_PROJECT_URL
+    --label org.opencontainers.image.documentation=$CI_PROJECT_URL
+    --label org.opencontainers.image.licenses=$CI_PROJECT_URL
+    --label org.opencontainers.image.url=$CI_PROJECT_URL
+    --label vcs-url=$CI_PROJECT_URL
+    --label com.gitlab.ci.user=$CI_SERVER_URL/$GITLAB_USER_LOGIN
+    --label com.gitlab.ci.email=$GITLAB_USER_EMAIL
+    --label com.gitlab.ci.tagorbranch=$CI_COMMIT_REF_NAME
+    --label com.gitlab.ci.pipelineurl=$CI_PIPELINE_URL
+    --label com.gitlab.ci.commiturl=$CI_PROJECT_URL/commit/$CI_COMMIT_SHA
+    --label com.gitlab.ci.cijoburl=$CI_JOB_URL
+    --label com.gitlab.ci.mrurl=$CI_PROJECT_URL/-/merge_requests/$CI_MERGE_REQUEST_ID
+
+stages:
+  - pre
+  - build
+  - deploy
+
+get-latest-git-version:
+  stage: pre
+  image: 
+    name: alpine/git
+    entrypoint: [""]
+  rules:
+    - if: '$VERSIONLABELMETHOD == "LastVersionTagInGit"'    
+  script:
+    - |
+      echo "the google kaniko container does not have git and does not have a packge manager to install it"
+      git clone https://github.com/GoogleContainerTools/kaniko.git
+      cd kaniko
+      echo -n "$(git describe --abbrev=0 --tags)" > ../VERSIONTAG.txt
+      echo "VERSIONTAG.txt contains $(cat ../VERSIONTAG.txt)"
+  artifacts:
+    paths:
+      - VERSIONTAG.txt
+
+
+build_with_kaniko:
+  #Hidden job to use as an "extends" template
+  stage: build
+  script:
+    - | 
+      echo "Building and shipping image to $CI_REGISTRY_IMAGE"
+
+      echo "USERNAME : $CI_REGISTRY_USER" 
+      echo "PASSWORD : $CI_REGISTRY_PASSWORD" 
+
+      #Build date for opencontainers
+      BUILDDATE="'$(date '+%FT%T%z' | sed -E -n 's/(\+[0-9]{2})([0-9]{2})$/\1:\2/p')'" #rfc 3339 date
+      IMAGE_LABELS="$IMAGE_LABELS --label org.opencontainers.image.created=$BUILDDATE --label build-date=$BUILDDATE"
+
+      #Description for opencontainers
+      BUILDTITLE=$(echo $CI_PROJECT_TITLE | tr " " "_")
+      IMAGE_LABELS="$IMAGE_LABELS --label org.opencontainers.image.title=$BUILDTITLE --label org.opencontainers.image.description=$BUILDTITLE"
+      
+      #Add ref.name for opencontainers
+      IMAGE_LABELS="$IMAGE_LABELS --label org.opencontainers.image.ref.name=$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_NAME"
+
+      #Build Version Label and Tag from git tag, LastVersionTagInGit was placed by a previous job artifact
+      if [[ "$VERSIONLABELMETHOD" == "LastVersionTagInGit" ]]; then VERSIONLABEL=$(cat VERSIONTAG.txt); fi
+      if [[ "$VERSIONLABELMETHOD" == "OnlyIfThisCommitHasVersion" ]]; then VERSIONLABEL=$CI_COMMIT_TAG; fi
+      if [[ ! -z "$VERSIONLABEL" ]]; then 
+        IMAGE_LABELS="$IMAGE_LABELS --label org.opencontainers.image.version=$VERSIONLABEL"
+        ADDITIONALTAGLIST="$ADDITIONALTAGLIST $VERSIONLABEL"
+      fi
+      
+      ADDITIONALTAGLIST="$ADDITIONALTAGLIST $CI_COMMIT_REF_NAME $CI_COMMIT_SHORT_SHA"
+      if [[ "$CI_COMMIT_BRANCH" == "$CI_DEFAULT_BRANCH" ]]; then ADDITIONALTAGLIST="$ADDITIONALTAGLIST latest"; fi
+      if [[ -n "$ADDITIONALTAGLIST" ]]; then 
+        for TAG in $ADDITIONALTAGLIST; do 
+          FORMATTEDTAGLIST="${FORMATTEDTAGLIST} --tag $CI_REGISTRY_IMAGE:$TAG "; 
+        done; 
+      fi
+      
+      #Reformat Docker tags to kaniko's --destination argument:
+      FORMATTEDTAGLIST=$(echo "${FORMATTEDTAGLIST}" | sed s/\-\-tag/\-\-destination/g) 
+
+      echo "Kaniko arguments to run: --context $CI_PROJECT_DIR --dockerfile $CI_PROJECT_DIR/Dockerfile $KANIKO_CACHE_ARGS $FORMATTEDTAGLIST $IMAGE_LABELS --build-arg GIT_COMMIT=$CI_COMMIT_SHORT_SHA  --build-arg CI_COMMIT_BRANCH=$CI_COMMIT_BRANCH --build-arg CI_COMMIT_TAG=$CI_COMMIT_TAG --build-arg=MY_VERSION=$MY_VERSION"
+
+      echo "Ceate .docker"
+      mkdir -p /kaniko/.docker
+
+      echo "Create auth file"
+      echo -n "{\"auths\":{\"$CI_REGISTRY\":{\"auth\":\"$(echo -n $CI_REGISTRY_USER:$CI_REGISTRY_PASSWORD | base64)\"}}}" > /kaniko/.docker/config.json
+
+      echo "Executor..."
+      /kaniko/executor \
+        --context $CI_PROJECT_DIR \
+        --dockerfile $CI_PROJECT_DIR/Dockerfile $KANIKO_CACHE_ARGS $FORMATTEDTAGLIST $IMAGE_LABELS \
+        --build-arg GIT_COMMIT=$CI_COMMIT_SHORT_SHA \
+        --build-arg CI_COMMIT_BRANCH=$CI_COMMIT_BRANCH \
+        --build-arg CI_COMMIT_TAG=$CI_COMMIT_TAG \
+        --build-arg=MY_VERSION=$MY_VERSION
+  rules:
+    - changes:
+      - Dockerfile
+      - public/**/*
+
+deploy:
+  stage: deploy
+  image:
+    name: bitnamilegacy/kubectl:latest
+    entrypoint: [""]
+  script:
+    # - echo "10.94.1.3 mining-km1.local" >> /etc/hosts
+
+    - echo $KUBE_CONFIG | base64 --decode > ~/.kube/config
+    - cat ~/.kube/config
+
+    - sed -i 's|<DB_PASSWORD>|'${DB_PASSWORD}'|' $CI_PROJECT_DIR/yaml/uat/1-secret.yaml
+    - sed -i 's|<APP_KEY>|'${APP_KEY}'|' $CI_PROJECT_DIR/yaml/uat/1-secret.yaml
+    - sed -i 's|<REDIS_PASSWORD>|'${REDIS_PASSWORD}'|' $CI_PROJECT_DIR/yaml/uat/1-secret.yaml
+
+    - cat $CI_PROJECT_DIR/yaml/uat/1-deployment.yaml
+
+    - kubectl --insecure-skip-tls-verify get pod -n sss
+    
+    - kubectl --insecure-skip-tls-verify apply -f $CI_PROJECT_DIR/yaml/uat/1-config.yaml
+    - kubectl --insecure-skip-tls-verify apply -f $CI_PROJECT_DIR/yaml/uat/1-secret.yaml
+    - kubectl --insecure-skip-tls-verify apply -f $CI_PROJECT_DIR/yaml/uat/1-deployment.yaml
+    - kubectl --insecure-skip-tls-verify apply -f $CI_PROJECT_DIR/yaml/uat/1-ingress.yaml
+
+    - kubectl --insecure-skip-tls-verify rollout restart deploy/sss-api -n sss
+    - kubectl --insecure-skip-tls-verify rollout status deploy/sss-api -n sss
+  rules:
+    - if: $CI_COMMIT_BRANCH == "dev"
