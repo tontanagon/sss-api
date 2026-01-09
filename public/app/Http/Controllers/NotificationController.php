@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class NotificationController extends Controller
@@ -13,7 +14,8 @@ class NotificationController extends Controller
             $paginate = $request->limit;
         }
 
-        $user = auth('sanctum')->user();
+        // $user = auth('sanctum')->user();
+        $user = User::find(1);
         $noti = $user->unreadNotifications()->paginate($paginate);
 
         if ($noti->isEmpty()) {
@@ -30,7 +32,9 @@ class NotificationController extends Controller
             $paginate = $request->limit;
         }
 
-        $user = auth('sanctum')->user();
+        // $user = auth('sanctum')->user();
+        $user = User::find(1);
+
         $noti = $user->readNotifications()->paginate($paginate);
 
         if ($noti->isEmpty()) {

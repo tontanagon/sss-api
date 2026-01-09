@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Jobs\SendNotification;
 use App\Models\BookingHistory;
 use App\Models\Product;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -247,7 +248,8 @@ class BookingHistoryController extends Controller
 
     public function userBookingHistoryById($id)
     {
-        $user = auth('sanctum')->user();
+        $user = User::find(1);
+        // $user = auth('sanctum')->user();
         $booking = $user->BookingHistories()->with([
             'itemBookingHistories',
             'bookingStatusHistories' => function ($query) {
@@ -273,7 +275,8 @@ class BookingHistoryController extends Controller
             $search_text = $request->search_text;
         }
 
-        $user = auth('sanctum')->user();
+        // $user = auth('sanctum')->user();
+        $user = User::find(1);
         $booking_list = $user->bookingHistories()
             ->where(function ($query) use ($search_text) {
                 $query->where('activity_name', 'like', "%{$search_text}%")

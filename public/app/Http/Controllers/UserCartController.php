@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\CoreConfigs\Subject;
 use App\Models\Product;
+use App\Models\User;
 use App\Models\UserCart;
 use Illuminate\Http\Request;
 
@@ -11,7 +12,9 @@ class UserCartController extends Controller
 {
     public function getCart(Request $request)
     {
-        $user = auth('sanctum')->user();
+        // $user = auth('sanctum')->user();
+        $user = User::find(1);
+
         $cart = UserCart::where('user_id', $user->id)->first();
         if (!$cart) {
             return response()->json([

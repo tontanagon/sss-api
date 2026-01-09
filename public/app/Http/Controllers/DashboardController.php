@@ -16,7 +16,7 @@ class DashboardController extends Controller
     {
         $user = auth('sanctum')->user();
 
-        if ($user->hasRole('Administrator')) {
+        if (true) {
             $booking_status = BookingHistory::whereIn('status', ['pending', 'packed', 'inuse', 'overdue', 'completed'])
                 ->get()
                 ->pluck('status')->countBy();

@@ -46,7 +46,7 @@ Route::group(['middleware' => ['auth:sanctum', 'throttle:' . config('sss.throttl
 ///Route Product
 Route::group([
     'prefix'     => '/products',
-    'middleware' => ['auth:sanctum', CheckManageProduct::class, 'throttle:' . config('sss.throttle_limit')],
+    'middleware' => ['auth:sanctum', 'throttle:' . config('sss.throttle_limit')],
     'namespace'  => 'App\Http\Controllers',
 ], function () {
     Route::get('/', [ProductController::class, 'getProduct']);
@@ -72,7 +72,7 @@ Route::group([
 ///Route Category
 Route::group([
     'prefix'     => '/categories',
-    'middleware' => ['auth:sanctum', CheckManageProduct::class, 'throttle:' . config('sss.throttle_limit')],
+    'middleware' => ['auth:sanctum', 'throttle:' . config('sss.throttle_limit')],
     'namespace'  => 'App\Http\Controllers',
 ], function () {
     Route::get('/get', [CategoryController::class, 'getCategory']);
@@ -87,7 +87,7 @@ Route::group([
 ///Route Type
 Route::group([
     'prefix'     => '/types',
-    'middleware' => ['auth:sanctum', CheckManageProduct::class, 'throttle:' . config('sss.throttle_limit')],
+    'middleware' => ['auth:sanctum', 'throttle:' . config('sss.throttle_limit')],
     'namespace'  => 'App\Http\Controllers',
 ], function () {
     Route::get('/get', [TypeController::class, 'getType']);
@@ -102,7 +102,7 @@ Route::group([
 ///Route Tag
 Route::group([
     'prefix'     => '/tags',
-    'middleware' => ['auth:sanctum', CheckManageProduct::class, 'throttle:' . config('sss.throttle_limit')],
+    'middleware' => ['auth:sanctum', 'throttle:' . config('sss.throttle_limit')],
     'namespace'  => 'App\Http\Controllers',
 ], function () {
     Route::get('/get', [TagController::class, 'getTag']);
@@ -117,7 +117,7 @@ Route::group([
 ///Route User manager
 Route::group([
     'prefix'     => '/user-manager',
-    'middleware' => ['auth:sanctum', CheckManageUser::class, 'throttle:' . config('sss.throttle_limit')],
+    'middleware' => ['auth:sanctum', 'throttle:' . config('sss.throttle_limit')],
     'namespace'  => 'App\Http\Controllers',
 ], function () {
     Route::get('/get', [UserController::class, 'getUser']);
@@ -132,7 +132,7 @@ Route::group([
 ///Route Role manager
 Route::group([
     'prefix'     => '/role-manager',
-    'middleware' => ['auth:sanctum', CheckManageUser::class, 'throttle:' . config('sss.throttle_limit')],
+    'middleware' => ['auth:sanctum', 'throttle:' . config('sss.throttle_limit')],
     'namespace'  => 'App\Http\Controllers',
 ], function () {
     Route::get('/get', [RoleController::class, 'getRole']);
@@ -149,7 +149,7 @@ Route::group([
 ///Route Core Configs
 Route::group([
     'prefix'     => '/core-configs',
-    'middleware' => ['auth:sanctum', CheckManageWebSetting::class, 'throttle:' . config('sss.throttle_limit')],
+    'middleware' => ['auth:sanctum', 'throttle:' . config('sss.throttle_limit')],
     'namespace'  => 'App\Http\Controllers',
 ], function () {
     Route::get('/', [CoreConfigsController::class, 'getCoreConfigs']);
@@ -164,7 +164,7 @@ Route::group([
 ///Route Banner
 Route::group([
     'prefix'     => '/banner',
-    'middleware' => ['auth:sanctum', CheckManageWebSetting::class, 'throttle:' . config('sss.throttle_limit')],
+    'middleware' => ['auth:sanctum', 'throttle:' . config('sss.throttle_limit')],
     'namespace'  => 'App\Http\Controllers',
 ], function () {
     Route::get('/', [BannerController::class, 'getBanner']);
@@ -179,7 +179,7 @@ Route::group([
 ///Route Subject
 Route::group([
     'prefix'     => '/subject',
-    'middleware' => ['auth:sanctum', CheckManageWebSetting::class, 'throttle:' . config('sss.throttle_limit')],
+    'middleware' => ['auth:sanctum', 'throttle:' . config('sss.throttle_limit')],
     'namespace'  => 'App\Http\Controllers',
 ], function () {
     Route::get('/', [SubjectController::class, 'getSubject']);
@@ -265,7 +265,7 @@ Route::group([
 /// Approve api
 Route::group([
     'prefix'     => '/approve',
-    'middleware' => ['auth:sanctum', CheckManageApprove::class, 'throttle:' . config('sss.throttle_limit')],
+    'middleware' => ['auth:sanctum', 'throttle:' . config('sss.throttle_limit')],
     'namespace'  => 'App\Http\Controllers',
 ], function () {
     Route::get('/pending-list', [ApproveController::class, 'approveListPending']);
@@ -282,7 +282,7 @@ Route::group([
 /// Admin Request api
 Route::group([
     'prefix'     => '/request',
-    'middleware' => ['auth:sanctum', CheckManageRequest::class, 'throttle:' . config('sss.throttle_limit')],
+    'middleware' => ['auth:sanctum', 'throttle:' . config('sss.throttle_limit')],
     'namespace'  => 'App\Http\Controllers',
 ], function () {
     Route::get('/all', [AdminRequestController::class, 'requestAll']);
@@ -305,7 +305,7 @@ Route::group([
 /// Dashboard api
 Route::group([
     'prefix'     => '/dashboard',
-    'middleware' => ['auth:sanctum', CheckManageApproveOrRequest::class, 'throttle:' . config('sss.throttle_limit')],
+    'middleware' => ['auth:sanctum', 'throttle:' . config('sss.throttle_limit')],
     'namespace'  => 'App\Http\Controllers',
 ], function () {
     Route::get('/status-report', [DashboardController::class, 'StatusCount']);
@@ -324,7 +324,7 @@ Route::group([
 /// Admin Page api
 Route::group([
     'prefix'     => '/sidebar',
-    'middleware' => ['auth:sanctum', CheckManageRequest::class, 'throttle:' . config('sss.throttle_limit')],
+    'middleware' => ['auth:sanctum', 'throttle:' . config('sss.throttle_limit')],
     'namespace'  => 'App\Http\Controllers',
 ], function () {
     Route::get('/count-booking-status-admin', [SidebarController::class, 'BookingStatusCountAdmin']);

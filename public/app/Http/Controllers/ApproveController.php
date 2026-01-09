@@ -243,7 +243,7 @@ class ApproveController extends Controller
 
         $booking_list = BookingHistory::with('itemBookingHistories')
             ->where('status', 'pending')
-            ->where('teacher', $user->name)
+            // ->where('teacher', $user->name)
             ->where(function ($query) use ($search_text) {
                 $query->where('user_name', 'like', "%{$search_text}%")
                     ->orWhere('user_code', 'like', "%{$search_text}%")
@@ -271,7 +271,7 @@ class ApproveController extends Controller
 
         $booking_list = BookingHistory::with('itemBookingHistories')
             ->whereNot('status', 'pending')
-            ->where('teacher', $user->name)
+            // ->where('teacher', $user->name)
             ->where(function ($query) use ($search_text) {
                 $query->where('user_name', 'like', "%{$search_text}%")
                     ->orWhere('booking_number', 'like', "%{$search_text}%")
@@ -303,7 +303,9 @@ class ApproveController extends Controller
         $user = auth('sanctum')->user();
         $booking = BookingHistory::with(['itemBookingHistories.product', 'bookingStatusHistories' => function ($query) {
             $query->orderBy('created_at', 'desc');
-        }])->where('teacher', $user->name)->find($id);
+        }])
+        // ->where('teacher', $user->name)
+        ->find($id);
 
         if (!$booking) {
             return response()->json([
