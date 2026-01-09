@@ -163,6 +163,64 @@ class AuthController extends Controller
         ],200);
     }
 
+    public function loginWithGoogle(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            "accessToken" => "required",
+        ]);
+
+        if ($validator->fails()) {
+            $errorMessage = $validator->errors()->first();
+            $response = [
+                'status' => false,
+                'message' => $errorMessage,
+            ];
+            return response()->json($response, 400);
+        }
+
+        $response = Http::withToken($request->accessToken)->get('https://www.googleapis.com/oauth2/v1/userinfo?alt=json');
+        $data = $response->json();
+
+        if (isset($data['error'])) {
+            return response()->json([
+                "status" => false,
+                "message" => $data['error']['message'],
+            ],404);
+        }
+
+        //user info from google
+        $user_name_google = $data['name'];
+        $email_google = $data['email'];
+        $provider_id = $data['id'];
+
+        $user = User::updateOrCreate(
+            ['email' => $email_google],
+            ['provider_id' => $provider_id, 'name' => $user_name_google, 'login_type' => 'google'],
+        );
+
+        if ($user->getRoleNames()->isEmpty()) {
+            $user->assignRole('Student');
+        }
+
+        //create token
+        $token = $this->genToken($user);
+
+        return response()->json([
+            "status" => true,
+            "message" => "Login successful",
+            "user_info" => [
+                "id" => $user->id,
+                "provider_id" => $user->provider_id,
+                "name" => $user->name,
+                "user_code" => $user->user_code,
+                "user_grade" => $user->user_grade,
+                "email" => $user->email,
+                "token" => $token,
+                "role" => $user->getRoleNames(),
+            ]
+        ],200);
+    }
+
     public function profile()
     {
         $userData = auth()->user();

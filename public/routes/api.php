@@ -34,6 +34,7 @@ use App\Http\Middleware\CheckManageApproveOrRequest;
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:' . config('sss.throttle_limit'));
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:' . config('sss.throttle_limit'));
 Route::post('/login-with-microsoft', [AuthController::class, 'loginWithMicrosoft'])->middleware('throttle:' . config('sss.throttle_limit'));
+Route::post('/login-with-google', [AuthController::class, 'loginWithGoogle'])->middleware('throttle:' . config('sss.throttle_limit'));
 
 Route::group(['middleware' => ['auth:sanctum', 'throttle:' . config('sss.throttle_limit')]], function () {
     Route::get('/profile', [AuthController::class, 'profile']);
