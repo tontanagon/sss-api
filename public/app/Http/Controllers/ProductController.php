@@ -137,7 +137,8 @@ class ProductController extends Controller
 
     public function createProduct(Request $request)
     {
-        $user = auth('sanctum')->user();
+        // $user = auth('sanctum')->user();
+        $user = User::find(1); // temp for test admin
         $filepath = '';
         $validator = Validator::make($request->all(), [
             "name" => "required|string",
@@ -267,7 +268,8 @@ class ProductController extends Controller
 
     public function updateProductStock(Request $request)
     {
-        $user = auth('sanctum')->user();
+        // $user = auth('sanctum')->user();
+        $user = User::find(1); // temp for test admin
 
         $product = Product::find($request->id);
         // id: formData.id,

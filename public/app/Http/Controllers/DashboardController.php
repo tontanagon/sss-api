@@ -14,7 +14,8 @@ class DashboardController extends Controller
     public $MAX_DATA = 10;
     public function StatusCount()
     {
-        $user = auth('sanctum')->user();
+        // $user = auth('sanctum')->user();
+        $user = User::find(1); // temp for test admin
 
         if (true) {
             $booking_status = BookingHistory::whereIn('status', ['pending', 'packed', 'inuse', 'overdue', 'completed'])
